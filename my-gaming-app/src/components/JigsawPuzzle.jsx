@@ -1,13 +1,17 @@
 import React, {useState, useEffect } from 'react';
+import { database, supabase } from '../lib/supabase';
+import { saveLocalScore } from '../lib/localStorage';
 
 
-const JigsawPuzzle = () => {
+const JigsawPuzzle = ({ user }) => {
 
     const solvedState = [1,2,3,4,5,6,7,8, null];
 
     const [tiles, setTiles] = useState([]);
     const [moves, setMoves] = useState(0);
     const [isWon, setIsWon] = useState(false);
+    const [startTime, setStartTime] = useState(null);
+    const [scoreSaved, setScoreSaved] = useState(false);
 
 
     const shuffleTiles = () => {
@@ -23,6 +27,8 @@ const JigsawPuzzle = () => {
         setTiles(shuffled);
         setMoves(0);
         setIsWon(false);
+        setStartTime(Date.now());
+        setScoreSaved(false);
 
     };
 
@@ -56,9 +62,23 @@ const JigsawPuzzle = () => {
 
     useEffect (() => {
         if (tiles.length > 0 && JSON.stringify(tiles) == JSON.stringify(solvedState)){
-            setIsWon(true);            
+            setIsWon(true);
+            
+            // Save score when puzzle is solved
+            if (user && !scoreSaved) {
+                const timeInSeconds = Math.floor((Date.now() - startTime) / 1000);
+                
+                if (supabase) {
+                    // Save to Supabase if configured
+                    database.saveScore(user.id, 'jigsaw', moves, moves, timeInSeconds);
+                } else {
+                    // Save to local storage
+                    saveLocalScore(user.id, 'jigsaw', moves, moves, timeInSeconds);
+                }
+                setScoreSaved(true);
+            }
          }
-    },[tiles]);
+    },[tiles, user, moves, startTime, scoreSaved]);
 
     useEffect(() => {
         shuffleTiles();
