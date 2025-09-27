@@ -45,7 +45,7 @@ const JigsawPuzzle = ({ user }) => {
 
        return moves;
     };
-    
+
     const handleTileClick = (index) => {
         if (isWon) return;
 
@@ -56,18 +56,18 @@ const JigsawPuzzle = ({ user }) => {
             const newTiles = [...tiles];
             [newTiles[emptyIndex], newTiles[index]] = [newTiles[index], newTiles[emptyIndex]];
             setTiles(newTiles)
-            setMoves(moves + 1); 
+            setMoves(moves + 1);
         }
     };
 
     useEffect (() => {
         if (tiles.length > 0 && JSON.stringify(tiles) == JSON.stringify(solvedState)){
             setIsWon(true);
-            
+
             // Save score when puzzle is solved
             if (user && !scoreSaved) {
                 const timeInSeconds = Math.floor((Date.now() - startTime) / 1000);
-                
+
                 if (supabase) {
                     // Save to Supabase if configured
                     database.saveScore(user.id, 'jigsaw', moves, moves, timeInSeconds);
@@ -85,62 +85,80 @@ const JigsawPuzzle = ({ user }) => {
     }, []);
 
 return (
-    <div className="flex flex-col items-center p-8 bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
-      <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
-        <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">
-          3×3 Jigsaw Puzzle
-        </h1>
-        
-        <div className="text-center mb-6">
-          <div className="flex justify-between items-center mb-4">
-            <span className="text-lg font-semibold text-gray-600">
-              Moves: <span className="text-blue-600">{moves}</span>
-            </span>
+    <div className="w-full min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex flex-col items-center justify-center px-4 py-8">
+      <div className="w-full max-w-2xl">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-4">
+            3×3 Jigsaw Puzzle
+          </h1>
+          <p className="text-gray-600 text-lg">
+            Arrange numbers 1-8 in order by sliding tiles into the empty space
+          </p>
+        </div>
+
+        {/* Game Stats and Controls */}
+        <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 mb-8">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+            <div className="text-center sm:text-left">
+              <span className="text-2xl font-bold text-gray-800">
+                Moves: <span className="text-blue-600">{moves}</span>
+              </span>
+            </div>
             <button
               onClick={shuffleTiles}
-              className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors duration-200 font-medium"
+              className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
             >
               New Game
             </button>
           </div>
-          
+
           {isWon && (
-            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg mb-4 animate-bounce">
-              🎉 Congratulations! You solved it in {moves} moves!
+            <div className="bg-gradient-to-r from-green-100 to-emerald-100 border border-green-400 text-green-800 px-6 py-4 rounded-xl mb-6 text-center animate-bounce">
+              <div className="text-2xl mb-2">🎉</div>
+              <div className="font-bold text-lg">Congratulations!</div>
+              <div>You solved it in {moves} moves!</div>
             </div>
           )}
-        </div>
 
-        <div className="grid grid-cols-3 gap-2 w-64 h-64 mx-auto bg-gray-200 p-4 rounded-xl shadow-inner">
-          {tiles.map((tile, index) => (
-            <div
-              key={index}
-              onClick={() => handleTileClick(index)}
-              className={`
-                flex items-center justify-center text-2xl font-bold rounded-lg shadow-md transition-all duration-200 cursor-pointer
-                ${tile === null 
-                  ? 'bg-gray-200 cursor-default' 
-                  : 'bg-gradient-to-br from-blue-400 to-blue-600 text-white hover:from-blue-500 hover:to-blue-700 hover:shadow-lg transform hover:scale-105'
-                }
-              `}
-            >
-              {tile}
+          {/* Game Board */}
+          <div className="flex justify-center">
+            <div className="grid grid-cols-3 gap-3 w-80 h-80 bg-gray-100 p-4 rounded-2xl shadow-inner">
+              {tiles.map((tile, index) => (
+                <div
+                  key={index}
+                  onClick={() => handleTileClick(index)}
+                  className={`
+                    flex items-center justify-center text-3xl font-bold rounded-xl shadow-md transition-all duration-200 cursor-pointer
+                    ${tile === null
+                      ? 'bg-gray-200 cursor-default shadow-inner'
+                      : 'bg-gradient-to-br from-blue-400 to-blue-600 text-white hover:from-blue-500 hover:to-blue-700 hover:shadow-lg transform hover:scale-105 active:scale-95'
+                    }
+                  `}
+                >
+                  {tile}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
 
-        <div className="mt-6 text-center text-gray-600">
-          <p className="text-sm">
-            Click on tiles adjacent to the empty space to move them.
-          </p>
-          <p className="text-sm mt-2">
-            Goal: Arrange numbers 1-8 in order with empty space at bottom right.
-          </p>
+          {/* Instructions */}
+          <div className="mt-8 text-center">
+            <div className="bg-gray-50 rounded-xl p-4">
+              <h3 className="font-semibold text-gray-800 mb-2">How to Play:</h3>
+              <p className="text-gray-600 text-sm mb-2">
+                Click on tiles adjacent to the empty space to slide them
+              </p>
+              <p className="text-gray-600 text-sm">
+                Goal: Arrange numbers 1-8 in order with the empty space at bottom right
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 );
 
-} 
+}
 
 export default JigsawPuzzle

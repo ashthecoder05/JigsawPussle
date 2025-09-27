@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 const MemoryMatchingGame = () => {
   const symbols = ['♠', '♥', '♦', '♣', '★', '♪', '☀', '☽', '❤', '☘', '⚡', '☃'];
-  
+
   const [difficulty, setDifficulty] = useState('easy');
   const [cards, setCards] = useState([]);
   const [flippedCards, setFlippedCards] = useState([]);
@@ -29,7 +29,7 @@ const MemoryMatchingGame = () => {
     const { pairs } = getDifficultySettings();
     const selectedSymbols = symbols.slice(0, pairs);
     const cardPairs = [...selectedSymbols, ...selectedSymbols];
-    
+
     const shuffledCards = cardPairs
       .map((symbol, index) => ({
         id: index,
@@ -50,7 +50,7 @@ const MemoryMatchingGame = () => {
 
   const handleCardClick = (cardId) => {
     if (!gameStarted || gameWon) return;
-    
+
     const card = cards.find(c => c.id === cardId);
     if (card.isFlipped || card.isMatched || flippedCards.length >= 2) return;
 
@@ -65,7 +65,7 @@ const MemoryMatchingGame = () => {
 
     if (newFlippedCards.length === 2) {
       setMoves(prev => prev + 1);
-      
+
       const [firstCardId, secondCardId] = newFlippedCards;
       const firstCard = cards.find(c => c.id === firstCardId);
       const secondCard = cards.find(c => c.id === secondCardId);
@@ -124,102 +124,125 @@ const MemoryMatchingGame = () => {
   const { rows, cols } = getDifficultySettings();
 
   return (
-    <div className="flex flex-col items-center p-8 bg-gradient-to-br from-purple-50 to-pink-100 min-h-screen">
-      <div className="bg-white rounded-2xl shadow-xl p-8 max-w-4xl w-full">
-        <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">
-          Memory Matching Game
-        </h1>
-        
-        {!gameStarted && !gameWon && (
-          <div className="text-center mb-6">
-            <div className="mb-4">
-              <label className="block text-lg font-semibold text-gray-700 mb-2">
-                Choose Difficulty:
-              </label>
-              <select
-                value={difficulty}
-                onChange={(e) => setDifficulty(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-              >
-                <option value="easy">Easy (3×4)</option>
-                <option value="medium">Medium (4×4)</option>
-                <option value="hard">Hard (4×6)</option>
-              </select>
-            </div>
-            <button
-              onClick={initializeGame}
-              className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 font-medium text-lg"
-            >
-              Start Game
-            </button>
-          </div>
-        )}
+    <div className="w-full min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 flex flex-col items-center justify-center px-4 py-8">
+      <div className="w-full max-w-6xl">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-4">
+            Memory Matching Game
+          </h1>
+          <p className="text-gray-600 text-lg">
+            Test your memory by finding matching pairs of cards
+          </p>
+        </div>
 
-        {gameStarted && (
-          <div className="flex justify-between items-center mb-6">
-            <div className="text-lg font-semibold text-gray-600">
-              Moves: <span className="text-purple-600">{moves}</span>
-            </div>
-            <div className="text-lg font-semibold text-gray-600">
-              Time: <span className="text-purple-600">{formatTime(timeElapsed)}</span>
-            </div>
-            <button
-              onClick={initializeGame}
-              className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors duration-200"
-            >
-              New Game
-            </button>
-          </div>
-        )}
-
-        {gameWon && (
-          <div className="bg-green-100 border border-green-400 text-green-700 px-6 py-4 rounded-lg mb-6 text-center animate-bounce">
-            <h2 className="text-xl font-bold">Congratulations!</h2>
-            <p>You completed the game in {moves} moves and {formatTime(timeElapsed)}!</p>
-            <button
-              onClick={initializeGame}
-              className="mt-4 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
-            >
-              Play Again
-            </button>
-          </div>
-        )}
-
-        {cards.length > 0 && (
-          <div 
-            className={`grid gap-3 mx-auto justify-center`}
-            style={{
-              gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-              gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
-              maxWidth: `${cols * 80 + (cols - 1) * 12}px`
-            }}
-          >
-            {cards.map((card) => (
-              <div
-                key={card.id}
-                onClick={() => handleCardClick(card.id)}
-                className={`
-                  w-20 h-20 flex items-center justify-center text-2xl font-bold rounded-lg shadow-md transition-all duration-300 cursor-pointer transform hover:scale-105
-                  ${card.isFlipped || card.isMatched
-                    ? 'bg-gradient-to-br from-purple-400 to-purple-600 text-white rotate-0'
-                    : 'bg-gradient-to-br from-gray-200 to-gray-400 text-gray-400 hover:from-gray-300 hover:to-gray-500'
-                  }
-                  ${card.isMatched ? 'ring-4 ring-green-400' : ''}
-                `}
-              >
-                {card.isFlipped || card.isMatched ? card.symbol : '?'}
+        <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+          {/* Game Setup */}
+          {!gameStarted && !gameWon && (
+            <div className="text-center mb-8">
+              <div className="mb-6">
+                <label className="block text-xl font-semibold text-gray-700 mb-4">
+                  Choose Your Challenge:
+                </label>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                  <select
+                    value={difficulty}
+                    onChange={(e) => setDifficulty(e.target.value)}
+                    className="px-6 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-lg font-medium"
+                  >
+                    <option value="easy">Easy (3×4 - 6 pairs)</option>
+                    <option value="medium">Medium (4×4 - 8 pairs)</option>
+                    <option value="hard">Hard (4×6 - 12 pairs)</option>
+                  </select>
+                  <button
+                    onClick={initializeGame}
+                    className="px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105"
+                  >
+                    Start Game
+                  </button>
+                </div>
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          )}
 
-        {!gameStarted && !gameWon && cards.length === 0 && (
-          <div className="text-center text-gray-600 mt-8">
-            <p className="text-lg">Welcome to Memory Matching Game!</p>
-            <p className="mt-2">Choose your difficulty level and start playing.</p>
-            <p className="mt-2">Find all matching pairs by flipping two cards at a time.</p>
-          </div>
-        )}
+          {/* Game Stats */}
+          {gameStarted && (
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8 bg-gray-50 rounded-xl p-4">
+              <div className="text-xl font-bold text-gray-700">
+                Moves: <span className="text-purple-600">{moves}</span>
+              </div>
+              <div className="text-xl font-bold text-gray-700">
+                Time: <span className="text-purple-600">{formatTime(timeElapsed)}</span>
+              </div>
+              <button
+                onClick={initializeGame}
+                className="px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
+              >
+                New Game
+              </button>
+            </div>
+          )}
+
+          {/* Win Message */}
+          {gameWon && (
+            <div className="bg-gradient-to-r from-green-100 to-emerald-100 border border-green-400 text-green-800 px-6 py-6 rounded-xl mb-8 text-center animate-bounce">
+              <div className="text-3xl mb-2">🎉</div>
+              <h2 className="text-2xl font-bold mb-2">Congratulations!</h2>
+              <p className="text-lg mb-4">You completed the game in {moves} moves and {formatTime(timeElapsed)}!</p>
+              <button
+                onClick={initializeGame}
+                className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
+              >
+                Play Again
+              </button>
+            </div>
+          )}
+
+          {/* Game Board */}
+          {cards.length > 0 && (
+            <div className="flex justify-center mb-8">
+              <div
+                className={`grid gap-3 md:gap-4`}
+                style={{
+                  gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+                  gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
+                }}
+              >
+                {cards.map((card) => (
+                  <div
+                    key={card.id}
+                    onClick={() => handleCardClick(card.id)}
+                    className={`
+                      w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 flex items-center justify-center text-2xl md:text-3xl font-bold rounded-xl shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-105 active:scale-95
+                      ${card.isFlipped || card.isMatched
+                        ? 'bg-gradient-to-br from-purple-400 to-purple-600 text-white rotate-0'
+                        : 'bg-gradient-to-br from-gray-200 to-gray-400 text-gray-400 hover:from-gray-300 hover:to-gray-500'
+                      }
+                      ${card.isMatched ? 'ring-4 ring-green-400 shadow-xl' : ''}
+                    `}
+                  >
+                    {card.isFlipped || card.isMatched ? card.symbol : '?'}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Welcome Message */}
+          {!gameStarted && !gameWon && cards.length === 0 && (
+            <div className="text-center py-8">
+              <div className="bg-gray-50 rounded-xl p-6">
+                <h3 className="text-xl font-semibold text-gray-800 mb-4">How to Play:</h3>
+                <div className="space-y-2 text-gray-600">
+                  <p>🔍 Choose your difficulty level above</p>
+                  <p>🃏 Click cards to flip them and reveal symbols</p>
+                  <p>🎯 Find matching pairs by remembering card locations</p>
+                  <p>🏆 Match all pairs to win the game!</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

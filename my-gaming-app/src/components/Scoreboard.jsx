@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { database, supabase } from '../lib/supabase';
 import { getLocalLeaderboard, getLocalUserBestScores } from '../lib/localStorage';
 
-const Scoreboard = ({ user, currentPage, setCurrentPage }) => {
+const Scoreboard = ({ user, setCurrentPage }) => {
   const [activeTab, setActiveTab] = useState('jigsaw');
   const [leaderboard, setLeaderboard] = useState([]);
   const [userScores, setUserScores] = useState([]);
