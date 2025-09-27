@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { scores } from '../lib/supabase';
 
-const MemoryMatchingGame = () => {
+const MemoryMatchingGame = ({ player }) => {
   const symbols = ['♠', '♥', '♦', '♣', '★', '♪', '☀', '☽', '❤', '☘', '⚡', '☃'];
 
   const [difficulty, setDifficulty] = useState('easy');
@@ -112,8 +113,15 @@ const MemoryMatchingGame = () => {
     if (matchedPairs.length === pairs && gameStarted) {
       setGameWon(true);
       setGameStarted(false);
+
+      // Save score when game is won
+      if (player) {
+        // Calculate score based on efficiency (lower moves and time = higher score)
+        const efficiency = Math.max(0, 1000 - (moves * 10) - timeElapsed);
+        scores.saveScore(player.id, 'memory', efficiency, moves, timeElapsed);
+      }
     }
-  }, [matchedPairs, difficulty, gameStarted]);
+  }, [matchedPairs, difficulty, gameStarted, player, moves, timeElapsed]);
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);

@@ -1,14 +1,11 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
 import './App.css'
 import JigsawPuzzle from './components/JigsawPuzzle';
 import MemoryMatchingGame from './components/MemoryMatchingGame';
 import ColorRush90 from './components/ColorMode';
-import Auth from './components/Auth';
-import SimpleAuth from './components/SimpleAuth';
-import Scoreboard from './components/Scoreboard';
-import { auth, supabase } from './lib/supabase';
-import { saveUserToGlobalList } from './lib/localStorage';
+import PlayerEntry from './components/PlayerEntry';
+import { players, localStorage as playerStorage } from './lib/supabase';
 
 function HomePage() {
   return (
@@ -88,7 +85,6 @@ function HomePage() {
             </div>
           </Link>
         </div>
-
       </div>
     </div>
   )
@@ -109,46 +105,44 @@ function GameLayout({ children }) {
 }
 
 function App() {
-  const [user, setUser] = useState(null)
+  const [player, setPlayer] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  // Check authentication state
+  // Check for existing player on load
   useEffect(() => {
-    // First check for local storage user
-    const localUser = localStorage.getItem('gameArcadeUser')
-    if (localUser) {
-      try {
-        const user = JSON.parse(localUser)
-        // Make sure user is in global list for shared scoreboard
-        saveUserToGlobalList(user)
-        setUser(user)
+    const checkExistingPlayer = async () => {
+      // First check local storage
+      const localPlayer = playerStorage.getPlayer()
+      if (localPlayer) {
+        setPlayer(localPlayer)
         setLoading(false)
         return
-      } catch {
-        localStorage.removeItem('gameArcadeUser')
       }
-    }
 
-    // If Supabase is configured, check for Supabase user
-    if (supabase) {
-      auth.getCurrentUser().then(({ data: { user } }) => {
-        setUser(user)
-        setLoading(false)
-      })
-
-      const { data: { subscription } } = auth.onAuthStateChange(
-        (_, session) => {
-          setUser(session?.user ?? null)
-          setLoading(false)
-        }
-      )
-
-      return () => subscription.unsubscribe()
-    } else {
       setLoading(false)
     }
+
+    checkExistingPlayer()
   }, [])
 
+  const handlePlayerJoin = async (name) => {
+    try {
+      // Create or get player from Supabase
+      const { data: playerData, error } = await players.createOrGetPlayer(name)
+
+      if (error) {
+        throw new Error(error.message)
+      }
+
+      // Save to both state and local storage
+      setPlayer(playerData)
+      playerStorage.savePlayer(playerData)
+
+    } catch (error) {
+      console.error('Failed to join arcade:', error)
+      throw error
+    }
+  }
 
   if (loading) {
     return (
@@ -161,19 +155,21 @@ function App() {
     )
   }
 
+  // Show player entry if no player is set
+  if (!player) {
+    return <PlayerEntry onPlayerJoin={handlePlayerJoin} />
+  }
+
   return (
     <Router>
       <div className="w-full min-h-screen">
         <Routes>
-          <Route
-            path="/"
-            element={<HomePage />}
-          />
+          <Route path="/" element={<HomePage />} />
           <Route
             path="/jigsaw"
             element={
               <GameLayout>
-                <JigsawPuzzle user={user} />
+                <JigsawPuzzle player={player} />
               </GameLayout>
             }
           />
@@ -181,7 +177,7 @@ function App() {
             path="/memory"
             element={
               <GameLayout>
-                <MemoryMatchingGame user={user} />
+                <MemoryMatchingGame player={player} />
               </GameLayout>
             }
           />
@@ -189,27 +185,8 @@ function App() {
             path="/color"
             element={
               <GameLayout>
-                <ColorRush90 user={user} />
+                <ColorRush90 player={player} />
               </GameLayout>
-            }
-          />
-          <Route
-            path="/scoreboard"
-            element={
-              <GameLayout>
-                <Scoreboard user={user} />
-              </GameLayout>
-            }
-          />
-          <Route
-            path="/auth"
-            element={
-              supabase ?
-                <Auth onAuthSuccess={() => window.location.href = '/'} /> :
-                <SimpleAuth onAuthSuccess={(user) => {
-                  setUser(user)
-                  window.location.href = '/'
-                }} />
             }
           />
         </Routes>

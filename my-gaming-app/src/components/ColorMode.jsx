@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Clock, Trophy, Target, RotateCcw } from 'lucide-react';
+import { scores } from '../lib/supabase';
 
 
-const ColorRush90 = () => {
+const ColorRush90 = ({ player }) => {
     const [gameState, setGameState] = useState('menu'); // menu, playing, gameOver
     const [timeLeft, setTimeLeft] = useState(90);
     const [score, setScore] = useState(0);
@@ -89,6 +90,11 @@ const ColorRush90 = () => {
       const endGame = () => {
         setGameState('gameOver');
         clearInterval(timerRef.current);
+
+        // Save score to Supabase
+        if (player) {
+          scores.saveScore(player.id, 'color', score, null, 90 - timeLeft);
+        }
 
         // Update high score
         if (score > highScore) {
