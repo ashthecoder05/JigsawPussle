@@ -13,6 +13,8 @@ const ColorRush90 = ({ player }) => {
     const [currentColor, setCurrentColor] = useState('');
     const [isMatch, setIsMatch] = useState(false);
     const [highScore, setHighScore] = useState(0);
+    const [leaderboard, setLeaderboard] = useState([]);
+    const [loadingLeaderboard, setLoadingLeaderboard] = useState(true);
 
     const timerRef = useRef(null);
 
@@ -30,11 +32,23 @@ const ColorRush90 = ({ player }) => {
 
     const colorNames = Object.keys(colors);
 
+    const fetchLeaderboard = async () => {
+      try {
+        const { data } = await scores.getGameLeaderboard('color', 10);
+        setLeaderboard(data || []);
+      } catch (error) {
+        console.error('Failed to fetch leaderboard:', error);
+        setLeaderboard([]);
+      }
+      setLoadingLeaderboard(false);
+    };
+
     useEffect(() => {
         const savedHighScore = localStorage.getItem('colorRush90HighScore');
         if (savedHighScore) {
           setHighScore(parseInt(savedHighScore));
         }
+        fetchLeaderboard();
       }, []);
 
 
@@ -94,6 +108,11 @@ const ColorRush90 = ({ player }) => {
         // Save score to Supabase
         if (player) {
           scores.saveScore(player.id, 'color', score, null, 90 - timeLeft);
+
+          // Refresh leaderboard after saving
+          setTimeout(() => {
+            fetchLeaderboard();
+          }, 1000);
         }
 
         // Update high score
@@ -133,11 +152,65 @@ const ColorRush90 = ({ player }) => {
         return `${mins}:${secs.toString().padStart(2, '0')}`;
       };
 
+      const GameLeaderboard = () => (
+        <div className="bg-white rounded-2xl shadow-xl p-6">
+          <h3 className="text-2xl font-bold text-gray-800 mb-4 text-center">
+            🏆 High Scores
+          </h3>
+          {loadingLeaderboard ? (
+            <div className="text-center py-4">
+              <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-red-600"></div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {leaderboard.length > 0 ? (
+                leaderboard.map((entry, index) => (
+                  <div
+                    key={entry.id}
+                    className={`flex items-center justify-between p-3 rounded-xl ${
+                      index === 0
+                        ? 'bg-gradient-to-r from-yellow-100 to-orange-100 border-2 border-yellow-400'
+                        : index === 1
+                        ? 'bg-gradient-to-r from-gray-100 to-gray-200 border-2 border-gray-400'
+                        : index === 2
+                        ? 'bg-gradient-to-r from-orange-100 to-red-100 border-2 border-orange-400'
+                        : 'bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg font-bold">
+                        {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
+                      </span>
+                      <div>
+                        <p className="font-semibold text-gray-800 text-sm">{entry.player_name}</p>
+                        <p className="text-xs text-gray-600">
+                          90-second rush
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-red-600">{entry.score}</p>
+                      <p className="text-xs text-gray-500">correct</p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-6 text-gray-500">
+                  <p className="text-lg">🎯</p>
+                  <p className="text-sm">No scores yet!</p>
+                  <p className="text-xs">Be the first to complete the challenge</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+
 
       if (gameState === 'menu') {
         return (
           <div className="w-full min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 flex flex-col items-center justify-center px-4 py-8">
-            <div className="w-full max-w-4xl">
+            <div className="w-full max-w-7xl">
               {/* Header */}
               <div className="text-center mb-8">
                 <h1 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-600 mb-4">
@@ -148,42 +221,53 @@ const ColorRush90 = ({ player }) => {
                 </p>
               </div>
 
-              <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
-                <div className="text-center mb-8">
-                  <div className="text-6xl mb-6">🏃‍♂️💨</div>
-                  <h2 className="text-3xl font-bold text-orange-600 mb-8">90-Second Challenge</h2>
-                </div>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Game Setup */}
+                <div className="lg:col-span-2">
+                  <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+                    <div className="text-center mb-8">
+                      <div className="text-6xl mb-6">🏃‍♂️💨</div>
+                      <h2 className="text-3xl font-bold text-orange-600 mb-8">90-Second Challenge</h2>
+                    </div>
 
-                <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-xl p-6 mb-8">
-                  <h3 className="text-2xl font-bold text-red-600 mb-4 text-center">🎯 How to Play</h3>
-                  <div className="space-y-3 text-lg text-gray-700">
-                    <p>• You have exactly <span className="text-red-600 font-bold">90 SECONDS</span></p>
-                    <p>• Click <span className="text-green-600 font-bold">YES</span> if the word matches the color</p>
-                    <p>• Click <span className="text-red-600 font-bold">NO</span> if they don't match</p>
-                    <p>• Go as <span className="text-orange-600 font-bold">FAST</span> as possible!</p>
-                    <p>• Build streaks for maximum points</p>
+                    <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-xl p-6 mb-8">
+                      <h3 className="text-2xl font-bold text-red-600 mb-4 text-center">🎯 How to Play</h3>
+                      <div className="space-y-3 text-lg text-gray-700">
+                        <p>• You have exactly <span className="text-red-600 font-bold">90 SECONDS</span></p>
+                        <p>• Click <span className="text-green-600 font-bold">YES</span> if the word matches the color</p>
+                        <p>• Click <span className="text-red-600 font-bold">NO</span> if they don't match</p>
+                        <p>• Go as <span className="text-orange-600 font-bold">FAST</span> as possible!</p>
+                        <p>• Build streaks for maximum points</p>
+                      </div>
+                    </div>
+
+                    {highScore > 0 && (
+                      <div className="bg-gradient-to-r from-yellow-100 to-orange-100 border border-yellow-400 rounded-xl p-4 mb-6 text-center">
+                        <p className="text-orange-700 text-xl font-bold">
+                          🏆 Personal Best: {highScore} correct answers
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="text-center">
+                      <button
+                        onClick={startGame}
+                        className="px-12 py-4 bg-gradient-to-r from-red-500 to-orange-500 text-white text-2xl font-bold rounded-xl hover:from-red-600 hover:to-orange-600 transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl mb-4"
+                      >
+                        START CHALLENGE
+                      </button>
+
+                      <div className="text-gray-500">
+                        <p>Keyboard shortcuts: Y/1/← = YES | N/2/→ = NO</p>
+                        {player && <p className="text-sm mt-1">Playing as: {player.name}</p>}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {highScore > 0 && (
-                  <div className="bg-gradient-to-r from-yellow-100 to-orange-100 border border-yellow-400 rounded-xl p-4 mb-6 text-center">
-                    <p className="text-orange-700 text-xl font-bold">
-                      🏆 Personal Best: {highScore} correct answers
-                    </p>
-                  </div>
-                )}
-
-                <div className="text-center">
-                  <button
-                    onClick={startGame}
-                    className="px-12 py-4 bg-gradient-to-r from-red-500 to-orange-500 text-white text-2xl font-bold rounded-xl hover:from-red-600 hover:to-orange-600 transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl mb-4"
-                  >
-                    START CHALLENGE
-                  </button>
-
-                  <div className="text-gray-500">
-                    <p>Keyboard shortcuts: Y/1/← = YES | N/2/→ = NO</p>
-                  </div>
+                {/* Leaderboard */}
+                <div className="lg:col-span-1">
+                  <GameLeaderboard />
                 </div>
               </div>
             </div>
@@ -195,85 +279,98 @@ const ColorRush90 = ({ player }) => {
       if (gameState === 'playing') {
         return (
           <div className="w-full min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 px-4 py-8">
-            <div className="w-full max-w-5xl mx-auto">
-              {/* Stats Bar */}
-              <div className="bg-black bg-opacity-70 rounded-2xl p-6 mb-8 text-white">
-                <div className="flex flex-col lg:flex-row justify-between items-center gap-4">
-                  <div className="flex flex-col sm:flex-row items-center gap-6">
-                    <div className="flex items-center gap-3">
-                      <Trophy className="text-yellow-400" size={32} />
-                      <div className="text-center sm:text-left">
-                        <div className="text-3xl font-bold">{score}</div>
-                        <div className="text-sm text-gray-300">Score</div>
+            <div className="w-full max-w-7xl mx-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Game Area */}
+                <div className="lg:col-span-2">
+                  {/* Stats Bar */}
+                  <div className="bg-black bg-opacity-70 rounded-2xl p-6 mb-8 text-white">
+                    <div className="flex flex-col lg:flex-row justify-between items-center gap-4">
+                      <div className="flex flex-col sm:flex-row items-center gap-6">
+                        <div className="flex items-center gap-3">
+                          <Trophy className="text-yellow-400" size={32} />
+                          <div className="text-center sm:text-left">
+                            <div className="text-3xl font-bold">{score}</div>
+                            <div className="text-sm text-gray-300">Score</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Target className="text-orange-400" size={32} />
+                          <div className="text-center sm:text-left">
+                            <div className="text-2xl font-bold">{streak}</div>
+                            <div className="text-sm text-gray-300">Streak</div>
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-purple-300">{bestStreak}</div>
+                          <div className="text-sm text-gray-300">Best</div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <Clock className="text-red-400" size={32} />
+                        <div className="text-center">
+                          <div className="text-4xl font-bold text-red-400">{formatTime(timeLeft)}</div>
+                          <div className="text-sm text-gray-300">Time Left</div>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Target className="text-orange-400" size={32} />
-                      <div className="text-center sm:text-left">
-                        <div className="text-2xl font-bold">{streak}</div>
-                        <div className="text-sm text-gray-300">Streak</div>
+                    {player && (
+                      <div className="text-center mt-2 text-gray-300">Playing as: {player.name}</div>
+                    )}
+                  </div>
+
+                  {/* Main Game Area */}
+                  <div className="bg-white rounded-2xl shadow-2xl p-8 md:p-12 text-center">
+                    <div className="mb-8">
+                      <p className="text-gray-600 text-xl mb-6 font-semibold">
+                        Does the word match the color?
+                      </p>
+                      <div
+                        className="text-6xl md:text-8xl lg:text-9xl font-bold mb-8 p-6 rounded-2xl border-4 border-gray-300 transition-all duration-200"
+                        style={{ color: colors[currentColor] }}
+                      >
+                        {currentWord}
                       </div>
                     </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-purple-300">{bestStreak}</div>
-                      <div className="text-sm text-gray-300">Best</div>
+
+                    <div className="flex flex-col sm:flex-row gap-8 justify-center items-center">
+                      <button
+                        onClick={() => handleAnswer(true)}
+                        className="px-16 py-6 bg-green-600 text-white text-3xl font-bold rounded-2xl hover:bg-green-700 transition-all duration-200 transform hover:scale-105 shadow-2xl w-full sm:w-auto"
+                      >
+                        YES
+                      </button>
+                      <button
+                        onClick={() => handleAnswer(false)}
+                        className="px-16 py-6 bg-red-600 text-white text-3xl font-bold rounded-2xl hover:bg-red-700 transition-all duration-200 transform hover:scale-105 shadow-2xl w-full sm:w-auto"
+                      >
+                        NO
+                      </button>
+                    </div>
+
+                    <div className="mt-8 text-gray-500 text-lg">
+                      <p>Y/1/← = YES | N/2/→ = NO</p>
+                      <p className="text-sm mt-2">Go as fast as possible!</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <Clock className="text-red-400" size={32} />
-                    <div className="text-center">
-                      <div className="text-4xl font-bold text-red-400">{formatTime(timeLeft)}</div>
-                      <div className="text-sm text-gray-300">Time Left</div>
+                  {/* Progress Indicator */}
+                  <div className="mt-6 text-center">
+                    <div className="bg-gray-200 rounded-full h-4 max-w-md mx-auto">
+                      <div
+                        className="bg-gradient-to-r from-green-400 to-blue-500 h-4 rounded-full transition-all duration-1000"
+                        style={{ width: `${((90 - timeLeft) / 90) * 100}%` }}
+                      ></div>
                     </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Main Game Area */}
-              <div className="bg-white rounded-2xl shadow-2xl p-8 md:p-12 text-center">
-                <div className="mb-8">
-                  <p className="text-gray-600 text-xl mb-6 font-semibold">
-                    Does the word match the color?
-                  </p>
-                  <div
-                    className="text-6xl md:text-8xl lg:text-9xl font-bold mb-8 p-6 rounded-2xl border-4 border-gray-300 transition-all duration-200"
-                    style={{ color: colors[currentColor] }}
-                  >
-                    {currentWord}
+                    <p className="text-white mt-2">Progress: {Math.round(((90 - timeLeft) / 90) * 100)}%</p>
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-8 justify-center items-center">
-                  <button
-                    onClick={() => handleAnswer(true)}
-                    className="px-16 py-6 bg-green-600 text-white text-3xl font-bold rounded-2xl hover:bg-green-700 transition-all duration-200 transform hover:scale-105 shadow-2xl w-full sm:w-auto"
-                  >
-                    YES
-                  </button>
-                  <button
-                    onClick={() => handleAnswer(false)}
-                    className="px-16 py-6 bg-red-600 text-white text-3xl font-bold rounded-2xl hover:bg-red-700 transition-all duration-200 transform hover:scale-105 shadow-2xl w-full sm:w-auto"
-                  >
-                    NO
-                  </button>
+                {/* Leaderboard */}
+                <div className="lg:col-span-1">
+                  <GameLeaderboard />
                 </div>
-
-                <div className="mt-8 text-gray-500 text-lg">
-                  <p>Y/1/← = YES | N/2/→ = NO</p>
-                  <p className="text-sm mt-2">Go as fast as possible!</p>
-                </div>
-              </div>
-
-              {/* Progress Indicator */}
-              <div className="mt-6 text-center">
-                <div className="bg-gray-200 rounded-full h-4 max-w-md mx-auto">
-                  <div
-                    className="bg-gradient-to-r from-green-400 to-blue-500 h-4 rounded-full transition-all duration-1000"
-                    style={{ width: `${((90 - timeLeft) / 90) * 100}%` }}
-                  ></div>
-                </div>
-                <p className="text-white mt-2">Progress: {Math.round(((90 - timeLeft) / 90) * 100)}%</p>
               </div>
             </div>
           </div>
@@ -286,60 +383,78 @@ const ColorRush90 = ({ player }) => {
 
         return (
           <div className="w-full min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-black flex flex-col items-center justify-center px-4 py-8">
-            <div className="w-full max-w-3xl">
-              <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 text-center">
-                <div className="text-6xl mb-6">
-                  {isNewRecord ? '🏆' : '⏱️'}
-                </div>
-                <h2 className="text-4xl font-bold mb-6 text-gray-800">
-                  {isNewRecord ? 'NEW RECORD!' : 'TIME\'S UP!'}
-                </h2>
-
-                <div className="bg-gray-50 rounded-2xl p-6 mb-8">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div className="text-center">
-                      <div className="text-4xl font-bold text-orange-500 mb-2">{score}</div>
-                      <div className="text-lg text-gray-600">Final Score</div>
+            <div className="w-full max-w-7xl">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Results */}
+                <div className="lg:col-span-2">
+                  <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 text-center">
+                    <div className="text-6xl mb-6">
+                      {isNewRecord ? '🏆' : '⏱️'}
                     </div>
-                    <div className="text-center">
-                      <div className="text-4xl font-bold text-red-500 mb-2">{bestStreak}</div>
-                      <div className="text-lg text-gray-600">Best Streak</div>
+                    <h2 className="text-4xl font-bold mb-6 text-gray-800">
+                      {isNewRecord ? 'NEW RECORD!' : 'TIME\'S UP!'}
+                    </h2>
+
+                    <div className="bg-gray-50 rounded-2xl p-6 mb-8">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="text-center">
+                          <div className="text-4xl font-bold text-orange-500 mb-2">{score}</div>
+                          <div className="text-lg text-gray-600">Final Score</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-4xl font-bold text-red-500 mb-2">{bestStreak}</div>
+                          <div className="text-lg text-gray-600">Best Streak</div>
+                        </div>
+                      </div>
+
+                      <div className="mt-6 pt-6 border-t border-gray-300">
+                        <div className="text-center">
+                          <div className="text-3xl font-bold text-purple-600 mb-2">{highScore}</div>
+                          <div className="text-lg text-gray-600">Personal Best</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {isNewRecord && (
+                      <div className="bg-gradient-to-r from-yellow-100 to-orange-100 border border-yellow-400 rounded-xl p-4 mb-6">
+                        <p className="text-orange-700 text-xl font-bold">
+                          🎉 Congratulations on your new record!
+                        </p>
+                      </div>
+                    )}
+
+                    {player && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+                        <p className="text-blue-700 font-semibold">
+                          Score saved to leaderboard for {player.name}!
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="space-y-4">
+                      <button
+                        onClick={startGame}
+                        className="w-full sm:w-auto px-12 py-4 bg-gradient-to-r from-green-600 to-blue-600 text-white text-xl font-bold rounded-xl hover:from-green-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
+                      >
+                        PLAY AGAIN
+                      </button>
+                      <button
+                        onClick={() => setGameState('menu')}
+                        className="block mx-auto px-8 py-3 bg-gray-600 text-white text-lg font-bold rounded-xl hover:bg-gray-700 transition-colors"
+                      >
+                        Main Menu
+                      </button>
+                    </div>
+
+                    <div className="mt-8 text-gray-500 text-sm">
+                      <p>Challenge friends to beat your record of {highScore} correct answers!</p>
                     </div>
                   </div>
-
-                  <div className="mt-6 pt-6 border-t border-gray-300">
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-purple-600 mb-2">{highScore}</div>
-                      <div className="text-lg text-gray-600">Personal Best</div>
-                    </div>
-                  </div>
                 </div>
 
-                {isNewRecord && (
-                  <div className="bg-gradient-to-r from-yellow-100 to-orange-100 border border-yellow-400 rounded-xl p-4 mb-6">
-                    <p className="text-orange-700 text-xl font-bold">
-                      🎉 Congratulations on your new record!
-                    </p>
-                  </div>
-                )}
-
-                <div className="space-y-4">
-                  <button
-                    onClick={startGame}
-                    className="w-full sm:w-auto px-12 py-4 bg-gradient-to-r from-green-600 to-blue-600 text-white text-xl font-bold rounded-xl hover:from-green-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
-                  >
-                    PLAY AGAIN
-                  </button>
-                  <button
-                    onClick={() => setGameState('menu')}
-                    className="block mx-auto px-8 py-3 bg-gray-600 text-white text-lg font-bold rounded-xl hover:bg-gray-700 transition-colors"
-                  >
-                    Main Menu
-                  </button>
-                </div>
-
-                <div className="mt-8 text-gray-500 text-sm">
-                  <p>Challenge friends to beat your record of {highScore} correct answers!</p>
+                {/* Leaderboard */}
+                <div className="lg:col-span-1">
+                  <GameLeaderboard />
                 </div>
               </div>
             </div>
