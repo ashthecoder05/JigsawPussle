@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { scores } from '../lib/supabase';
+import GameCompletionPopup from './GameCompletionPopup';
 
 const MemoryMatchingGame = ({ player }) => {
   const symbols = ['♠', '♥', '♦', '♣', '★', '♪', '☀', '☽', '❤', '☘', '⚡', '☃'];
 
-  const [difficulty, setDifficulty] = useState('easy');
   const [cards, setCards] = useState([]);
   const [flippedCards, setFlippedCards] = useState([]);
   const [matchedPairs, setMatchedPairs] = useState([]);
@@ -17,16 +17,7 @@ const MemoryMatchingGame = ({ player }) => {
   const [scoreSaved, setScoreSaved] = useState(false);
 
   const getDifficultySettings = () => {
-    switch (difficulty) {
-      case 'easy':
-        return { pairs: 6, rows: 3, cols: 4 };
-      case 'medium':
-        return { pairs: 8, rows: 4, cols: 4 };
-      case 'hard':
-        return { pairs: 12, rows: 4, cols: 6 };
-      default:
-        return { pairs: 6, rows: 3, cols: 4 };
-    }
+    return { pairs: 12, rows: 4, cols: 6 };
   };
 
   const initializeGame = () => {
@@ -142,7 +133,7 @@ const MemoryMatchingGame = ({ player }) => {
         }, 1000);
       }
     }
-  }, [matchedPairs, difficulty, gameStarted, player, moves, timeElapsed, scoreSaved]);
+  }, [matchedPairs, gameStarted, player, moves, timeElapsed, scoreSaved]);
 
   useEffect(() => {
     fetchLeaderboard();
@@ -233,19 +224,7 @@ const MemoryMatchingGame = ({ player }) => {
               {!gameStarted && !gameWon && (
                 <div className="text-center mb-8">
                   <div className="mb-6">
-                    <label className="block text-xl font-semibold text-gray-700 mb-4">
-                      Choose Your Challenge:
-                    </label>
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                      <select
-                        value={difficulty}
-                        onChange={(e) => setDifficulty(e.target.value)}
-                        className="px-6 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-lg font-medium"
-                      >
-                        <option value="easy">Easy (3×4 - 6 pairs)</option>
-                        <option value="medium">Medium (4×4 - 8 pairs)</option>
-                        <option value="hard">Hard (4×6 - 12 pairs)</option>
-                      </select>
+                    <div className="flex justify-center">
                       <button
                         onClick={initializeGame}
                         className="px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105"
@@ -278,21 +257,6 @@ const MemoryMatchingGame = ({ player }) => {
                 </div>
               )}
 
-              {/* Win Message */}
-              {gameWon && (
-                <div className="bg-gradient-to-r from-green-100 to-emerald-100 border border-green-400 text-green-800 px-6 py-6 rounded-xl mb-8 text-center animate-bounce">
-                  <div className="text-3xl mb-2">🎉</div>
-                  <h2 className="text-2xl font-bold mb-2">Congratulations!</h2>
-                  <p className="text-lg mb-4">You completed the game in {moves} moves and {formatTime(timeElapsed)}!</p>
-                  {player && <div className="text-sm mt-1">Score saved to leaderboard</div>}
-                  <button
-                    onClick={initializeGame}
-                    className="mt-4 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
-                  >
-                    Play Again
-                  </button>
-                </div>
-              )}
 
               {/* Game Board */}
               {cards.length > 0 && (
@@ -347,6 +311,18 @@ const MemoryMatchingGame = ({ player }) => {
           </div>
         </div>
       </div>
+
+      {/* Game Completion Popup */}
+      <GameCompletionPopup
+        isVisible={gameWon}
+        gameTitle="Memory Matching"
+        score={Math.max(0, 1000 - timeElapsed)}
+        moves={moves}
+        time={formatTime(timeElapsed)}
+        player={player}
+        onPlayAgain={initializeGame}
+        onClose={() => setGameWon(false)}
+      />
     </div>
   );
 };

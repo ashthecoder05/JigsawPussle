@@ -1,5 +1,6 @@
 import React, {useState, useEffect } from 'react';
 import { scores } from '../lib/supabase';
+import GameCompletionPopup from './GameCompletionPopup';
 
 
 const JigsawPuzzle = ({ player }) => {
@@ -13,6 +14,7 @@ const JigsawPuzzle = ({ player }) => {
     const [scoreSaved, setScoreSaved] = useState(false);
     const [leaderboard, setLeaderboard] = useState([]);
     const [loadingLeaderboard, setLoadingLeaderboard] = useState(true);
+    const [completionTime, setCompletionTime] = useState(0);
 
 
     const shuffleTiles = () => {
@@ -79,6 +81,7 @@ const JigsawPuzzle = ({ player }) => {
             // Save score when puzzle is solved
             if (player && !scoreSaved) {
                 const timeInSeconds = Math.floor((Date.now() - startTime) / 1000);
+                setCompletionTime(timeInSeconds);
 
                 // Save to Supabase
                 scores.saveScore(player.id, 'jigsaw', moves, moves, timeInSeconds);
@@ -97,61 +100,13 @@ const JigsawPuzzle = ({ player }) => {
         fetchLeaderboard();
     }, []);
 
-const GameLeaderboard = () => (
-    <div className="bg-white rounded-2xl shadow-xl p-6">
-        <h3 className="text-2xl font-bold text-gray-800 mb-4 text-center">
-            🏆 Best Moves
-        </h3>
-        {loadingLeaderboard ? (
-            <div className="text-center py-4">
-                <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-            </div>
-        ) : (
-            <div className="space-y-3">
-                {leaderboard.length > 0 ? (
-                    leaderboard.map((entry, index) => (
-                        <div
-                            key={entry.id}
-                            className={`flex items-center justify-between p-3 rounded-xl ${
-                                index === 0
-                                    ? 'bg-gradient-to-r from-yellow-100 to-orange-100 border-2 border-yellow-400'
-                                    : index === 1
-                                    ? 'bg-gradient-to-r from-gray-100 to-gray-200 border-2 border-gray-400'
-                                    : index === 2
-                                    ? 'bg-gradient-to-r from-orange-100 to-red-100 border-2 border-orange-400'
-                                    : 'bg-gray-50'
-                            }`}
-                        >
-                            <div className="flex items-center gap-2">
-                                <span className="text-lg font-bold">
-                                    {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
-                                </span>
-                                <div>
-                                    <p className="font-semibold text-gray-800 text-sm">{entry.player_name}</p>
-                                    <p className="text-xs text-gray-600">
-                                        {entry.time_taken ? `${Math.floor(entry.time_taken / 60)}:${String(entry.time_taken % 60).padStart(2, '0')}` : 'Time N/A'}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-lg font-bold text-blue-600">{entry.moves}</p>
-                                <p className="text-xs text-gray-500">moves</p>
-                            </div>
-                        </div>
-                    ))
-                ) : (
-                    <div className="text-center py-6 text-gray-500">
-                        <p className="text-lg">🎯</p>
-                        <p className="text-sm">No scores yet!</p>
-                        <p className="text-xs">Be the first to complete the puzzle</p>
-                    </div>
-                )}
-            </div>
-        )}
-    </div>
-);
+    const formatTime = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
 
-return (
+  return (
     <div className="w-full min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex flex-col items-center justify-center px-4 py-8">
         <div className="w-full max-w-7xl">
             {/* Header */}
@@ -185,14 +140,6 @@ return (
                             </button>
                         </div>
 
-                        {isWon && (
-                            <div className="bg-gradient-to-r from-green-100 to-emerald-100 border border-green-400 text-green-800 px-6 py-4 rounded-xl mb-6 text-center animate-bounce">
-                                <div className="text-2xl mb-2">🎉</div>
-                                <div className="font-bold text-lg">Congratulations!</div>
-                                <div>You solved it in {moves} moves!</div>
-                                {player && <div className="text-sm mt-1">Score saved to leaderboard</div>}
-                            </div>
-                        )}
 
                         {/* Game Board */}
                         <div className="flex justify-center">
@@ -232,12 +179,71 @@ return (
 
                 {/* Leaderboard */}
                 <div className="lg:col-span-1">
-                    <GameLeaderboard />
+                    <div className="bg-white rounded-2xl shadow-xl p-6">
+                        <h3 className="text-2xl font-bold text-gray-800 mb-4 text-center">
+                            🏆 Best Moves
+                        </h3>
+                        {loadingLeaderboard ? (
+                            <div className="text-center py-4">
+                                <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {leaderboard.length > 0 ? (
+                                    leaderboard.map((entry, index) => (
+                                        <div
+                                            key={entry.id}
+                                            className={`flex items-center justify-between p-3 rounded-xl ${
+                                                index === 0
+                                                    ? 'bg-gradient-to-r from-yellow-100 to-orange-100 border-2 border-yellow-400'
+                                                    : index === 1
+                                                    ? 'bg-gradient-to-r from-gray-100 to-gray-200 border-2 border-gray-400'
+                                                    : index === 2
+                                                    ? 'bg-gradient-to-r from-orange-100 to-red-100 border-2 border-orange-400'
+                                                    : 'bg-gray-50'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-lg font-bold">
+                                                    {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
+                                                </span>
+                                                <div>
+                                                    <p className="font-semibold text-gray-800 text-sm">{entry.player_name}</p>
+                                                    <p className="text-xs text-gray-600">
+                                                        {entry.time_taken ? `${Math.floor(entry.time_taken / 60)}:${String(entry.time_taken % 60).padStart(2, '0')}` : 'Time N/A'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-lg font-bold text-blue-600">{entry.moves}</p>
+                                                <p className="text-xs text-gray-500">moves</p>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="text-center py-6 text-gray-500">
+                                        <p className="text-lg">🎯</p>
+                                        <p className="text-sm">No scores yet!</p>
+                                        <p className="text-xs">Be the first to complete the puzzle</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
+        <GameCompletionPopup
+            isVisible={isWon}
+            gameTitle="Jigsaw Puzzle"
+            moves={moves}
+            time={formatTime(completionTime)}
+            player={player}
+            onPlayAgain={shuffleTiles}
+            onClose={() => setIsWon(false)}
+        />
     </div>
-);
+  );
 
 }
 
