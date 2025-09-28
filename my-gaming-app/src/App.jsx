@@ -161,7 +161,7 @@ function App() {
   }
 
   return (
-    <Router>
+    <Router basename="/JigsawPussle">
       <div className="w-full min-h-screen">
         <Routes>
           <Route path="/" element={<HomePage />} />
